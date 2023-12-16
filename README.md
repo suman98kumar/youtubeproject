@@ -33,9 +33,12 @@ Share your learnings and projects with the data community - let's learn together
 Remember, the world of YouTube data awaits! Get digging! 
 
 Resources:
-Project GitHub Repository: (Link to your repository)
+Project GitHub Repository: https://github.com/suman98kumar/youtubeproject
+
 YouTube Data API v3: https://developers.google.com/youtube/v3
+
 Streamlit documentation: https://docs.streamlit.io/
+
 We hope you find this project valuable in your exploration of YouTube data. Feel free to contribute to the code or share your insights with the community!
 
 
