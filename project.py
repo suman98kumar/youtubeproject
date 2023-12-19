@@ -1,7 +1,3 @@
-pip install google-api-python-client
-pip install pymongo
-pip install psycopg2
-pip install pandas
 from googleapiclient.discovery import build
 import pymongo
 import pandas as pd
