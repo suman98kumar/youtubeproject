@@ -503,12 +503,13 @@ with st.sidebar:                                   #Creating sidebars and option
 if selected == 'Home':
     st.header(f'Welcome!')
 
-    channel_id=st.text_input("Enter the channel ID")   
+    channel_id=st.text_input("Enter the Channel ID")   
 
-    if st.button("Collect and Store Data"):                 #This button is help to transfer the data into MongoDB 
+    if st.button("Collect and Store Data in MongoDB"):                 #This button is help to transfer the data into MongoDB 
         ch_ids=[]
         db=client["youtube_data"]
         collection1=db["channel_details"]
+
         for ch_data in collection1.find({},{"_id":0,"Channel_information":1}):
             ch_ids.append(ch_data["Channel_information"]["Channel_Id"])
 
@@ -546,124 +547,235 @@ if selected == 'Home':
                         port="5432")  #Connecting to SQL server 
     cursor=mydb.cursor()
 
-    question=st.selectbox("Select your question",("1.All the videos and channels",
-                                                "2.Channels with most number of videos",
-                                                "3.10 most viewed videos",
-                                                "4.Comments in each videos",
-                                                "5.Videos with highest likes",
-                                                "6.Likes of all videos",
-                                                "7.Views of each channel",
-                                                "8.Videos published in the year of 2022",
-                                                "9.Average duration of all videos in each channel",
-                                                "10.Videos with highest number of comments"))
+    ##########################
 
-    if question=="1.All the videos and channels":
-        query1='''select title as videos,channel_name as channelname from videos'''
+    # Query to retrieve distinct channel names
+    query_get_channel_names = "SELECT DISTINCT channel_name FROM videos"
+    cursor.execute(query_get_channel_names)
+    channel_name_result = cursor.fetchall()
+    channel_name = [row[0] for row in channel_name_result]
+
+    # Add a special option for selecting all channels
+    special_option = "All"
+    channel_name_with_all = [special_option] + channel_name
+
+    # Use a conditional statement to handle the selection
+    selected_channel = st.selectbox("Select a Channel:", options=channel_name_with_all)
+
+    question = st.selectbox("Select a Question:", options=[
+                                                            "1.All the videos and channels",
+                                                            "2.Channels with most number of videos",
+                                                            "3.10 most viewed videos",
+                                                            "4.Comments in each videos",
+                                                            "5.Videos with highest likes",
+                                                            "6.Likes of all videos",
+                                                            "7.Views of each channel",
+                                                            "8.Videos published in the year of 2022",
+                                                            "9.Average duration of all videos in each channel",
+                                                            "10.Videos with highest number of comments"
+                                                        ])
+
+    if question == "1.All the videos and channels":
+    # Adjust the WHERE clause to include all channels if selected_channel is "All"
+        if selected_channel == "All":
+            query1 = '''SELECT title AS videos, channel_name AS channelname 
+                        FROM videos'''
+        else:
+            query1 = f'''SELECT title AS videos, channel_name AS channelname 
+                        FROM videos
+                        WHERE channel_name = '{selected_channel}' '''
+
         cursor.execute(query1)
-        mydb.commit()
-        table1=cursor.fetchall()
-        df=pd.DataFrame(table1,columns=["videos title","channel name"])
+        table1 = cursor.fetchall()
+        df = pd.DataFrame(table1, columns=["videos title", "channel name"])
         st.write(df)
 
-    elif question=="2.Channels with most number of videos":
-        query2='''select channel_name as channelname,total_videos as no_videos from channels
-                    order by total_videos desc'''
+    elif question == "2.Channels with most number of videos":
+        # Adjust the WHERE clause to include all channels if selected_channel is "All"
+        if selected_channel == "All":
+            query2 = '''SELECT channel_name AS channelname, total_videos AS no_videos 
+                        FROM channels
+                        ORDER BY total_videos DESC'''
+        else:
+            query2 = f'''SELECT channel_name AS channelname, total_videos AS no_videos 
+                        FROM channels
+                        WHERE channel_name = '{selected_channel}'
+                        ORDER BY total_videos DESC'''
+
         cursor.execute(query2)
-        mydb.commit()
-        table2=cursor.fetchall()
-        df2=pd.DataFrame(table2,columns=["channel name","No of videos"])
+        table2 = cursor.fetchall()
+        df2 = pd.DataFrame(table2, columns=["channel name", "No of videos"])
         st.write(df2)
 
-    elif question=="3.10 most viewed videos":
-        query3='''select views as views,channel_name as channelname,title as videotitle from videos
-                    where views is not null order by views desc limit 10'''
+
+    elif question == "3.10 most viewed videos":
+        # Adjust the WHERE clause to include all channels if selected_channel is "All"
+        if selected_channel == "All":
+            query3 = '''SELECT views AS views, channel_name AS channelname, title AS videotitle 
+                        FROM videos
+                        WHERE views IS NOT NULL
+                        ORDER BY views DESC
+                        LIMIT 10'''
+        else:
+            query3 = f'''SELECT views AS views, channel_name AS channelname, title AS videotitle 
+                        FROM videos
+                        WHERE views IS NOT NULL AND channel_name = '{selected_channel}'
+                        ORDER BY views DESC
+                        LIMIT 10'''
+
         cursor.execute(query3)
-        mydb.commit()
-        table3=cursor.fetchall()
-        df3=pd.DataFrame(table3,columns=["views","channel name","video title"])
+        table3 = cursor.fetchall()
+        df3 = pd.DataFrame(table3, columns=["views", "channel name", "video title"])
         st.write(df3)
 
-    elif question=="4.Comments in each videos":
-        query4='''select comments as No_comments,title as videotitle from videos 
-                    where comments is not null'''
+    elif question == "4.Comments in each videos":
+        # Adjust the WHERE clause to include all channels if selected_channel is "All"
+        if selected_channel == "All":
+            query4 = '''SELECT comments AS No_comments, title AS videotitle 
+                        FROM videos
+                        WHERE comments IS NOT NULL'''
+        else:
+            query4 = f'''SELECT comments AS No_comments, title AS videotitle 
+                        FROM videos
+                        WHERE comments IS NOT NULL AND channel_name = '{selected_channel}' '''
+
         cursor.execute(query4)
-        mydb.commit()
-        table4=cursor.fetchall()
-        df4=pd.DataFrame(table4,columns=["No of comments","video title"])
+        table4 = cursor.fetchall()
+        df4 = pd.DataFrame(table4, columns=["No of comments", "video title"])
         st.write(df4)
 
-    elif question=="5.Videos with highest likes":
-        query5='''select channel_name as channelname,title as videotitle,likes as No_likes from videos 
-                    where likes is not null order by likes desc'''
+    elif question == "5.Videos with highest likes":
+        # Adjust the WHERE clause to include all channels if selected_channel is "All"
+        if selected_channel == "All":
+            query5 = '''SELECT channel_name AS channelname, title AS videotitle, likes AS No_likes 
+                        FROM videos
+                        WHERE likes IS NOT NULL
+                        ORDER BY likes DESC'''
+        else:
+            query5 = f'''SELECT channel_name AS channelname, title AS videotitle, likes AS No_likes 
+                        FROM videos
+                        WHERE likes IS NOT NULL AND channel_name = '{selected_channel}'
+                        ORDER BY likes DESC'''
+
         cursor.execute(query5)
-        mydb.commit()
-        table5=cursor.fetchall()
-        df5=pd.DataFrame(table5,columns=["channel name","video title","No of likes"])
+        table5 = cursor.fetchall()
+        df5 = pd.DataFrame(table5, columns=["channel name", "video title", "No of likes"])
         st.write(df5)
 
-    elif question=="6.Likes of all videos":
-        query6='''select likes as likescount,title as videotitle from videos 
-                    where likes is not null order by likes desc'''
+
+    elif question == "6.Likes of all videos":
+    # Adjust the WHERE clause to include all channels if selected_channel is "All"
+        if selected_channel == "All":
+            query6 = '''SELECT likes AS likescount, title AS videotitle 
+                        FROM videos
+                        WHERE likes IS NOT NULL
+                        ORDER BY likes DESC'''
+        else:
+            query6 = f'''SELECT likes AS likescount, title AS videotitle 
+                        FROM videos
+                        WHERE likes IS NOT NULL AND channel_name = '{selected_channel}'
+                        ORDER BY likes DESC'''
+
         cursor.execute(query6)
-        mydb.commit()
-        table6=cursor.fetchall()
-        df6=pd.DataFrame(table6,columns=["likes count","video title"])
+        table6 = cursor.fetchall()
+        df6 = pd.DataFrame(table6, columns=["likes count", "video title"])
         st.write(df6)
 
-    elif question=="7.Views of each channel":
-        query7='''select channel_name as channename,views as viewscount from channels 
-                    where views is not null order by views'''
+
+    elif question == "7.Views of each channel":
+    # Adjust the WHERE clause to include all channels if selected_channel is "All"
+        if selected_channel == "All":
+            query7 = '''SELECT channel_name AS channename, views AS viewscount 
+                        FROM channels
+                        WHERE views IS NOT NULL
+                        ORDER BY views'''
+        else:
+            query7 = f'''SELECT channel_name AS channename, views AS viewscount 
+                        FROM channels
+                        WHERE views IS NOT NULL AND channel_name = '{selected_channel}'
+                        ORDER BY views'''
+
         cursor.execute(query7)
-        mydb.commit()
-        table7=cursor.fetchall()
-        df7=pd.DataFrame(table7,columns=["channel name","Total views"])
+        table7 = cursor.fetchall()
+        df7 = pd.DataFrame(table7, columns=["channel name", "Total views"])
         st.write(df7)
 
-    elif question=="8.Videos published in the year of 2022":
-        query8='''select title as videotitle,published as published, channel_name as channelname from videos  
-                    where extract(year from published)=2022'''
+    elif question == "8.Videos published in the year of 2022":
+        # Adjust the WHERE clause to include all channels if selected_channel is "All"
+        if selected_channel == "All":
+            query8 = '''SELECT title AS videotitle, published AS published, channel_name AS channelname 
+                        FROM videos
+                        WHERE EXTRACT(YEAR FROM published) = 2022'''
+        else:
+            query8 = f'''SELECT title AS videotitle, published AS published, channel_name AS channelname 
+                        FROM videos
+                        WHERE EXTRACT(YEAR FROM published) = 2022 AND channel_name = '{selected_channel}' '''
+
         cursor.execute(query8)
-        mydb.commit()
-        table8=cursor.fetchall()
-        df8=pd.DataFrame(table8,columns=["video title","published date","channel name"])
+        table8 = cursor.fetchall()
+        df8 = pd.DataFrame(table8, columns=["video title", "published date", "channel name"])
         st.write(df8)
 
-    elif question=="9.Average duration of all videos in each channel":
-        query9='''select channel_name as channelname,AVG(duration) as averageduration from videos  
-                    group by channel_name'''
+
+    elif question == "9.Average duration of all videos in each channel":
+    # Adjust the WHERE clause to include all channels if selected_channel is "All"
+        if selected_channel == "All":
+            query9 = '''SELECT channel_name AS channelname, AVG(duration) AS averageduration 
+                        FROM videos
+                        GROUP BY channel_name'''
+        else:
+            query9 = f'''SELECT channel_name AS channelname, AVG(duration) AS averageduration 
+                        FROM videos
+                        WHERE channel_name = '{selected_channel}'
+                        GROUP BY channel_name'''
+
         cursor.execute(query9)
-        mydb.commit()
-        table9=cursor.fetchall()
-        df9=pd.DataFrame(table9,columns=["channel name","Average duration"])
+        table9 = cursor.fetchall()
+        df9 = pd.DataFrame(table9, columns=["channel name", "Average duration"])
 
-        table9=[]
+        table9 = []
 
-        for index,row in df9.iterrows():
-            channel_title=row["channel name"]
-            average_duration=row["Average duration"]
-            average_duration_str=str(average_duration)
+        for index, row in df9.iterrows():
+            channel_title = row["channel name"]
+            average_duration = row["Average duration"]
+            average_duration_str = str(average_duration)
 
-            table9.append(dict(channel=channel_title,averageduration=average_duration_str))
+            table9.append(dict(channel=channel_title, averageduration=average_duration_str))
 
-        df1=pd.DataFrame(table9)
+        df1 = pd.DataFrame(table9)
         st.write(df1)
 
-    elif question=="10.Videos with highest number of comments":
-        query10='''select title as videotitle,channel_name as channelname,comments as comments from videos
-                    where comments is not null order by comments desc'''
+    elif question == "10.Videos with highest number of comments":
+        # Adjust the WHERE clause to include all channels if selected_channel is "All"
+        if selected_channel == "All":
+            query10 = '''SELECT title AS videotitle, channel_name AS channelname, comments AS comments 
+                        FROM videos
+                        WHERE comments IS NOT NULL
+                        ORDER BY comments DESC'''
+        else:
+            query10 = f'''SELECT title AS videotitle, channel_name AS channelname, comments AS comments 
+                        FROM videos
+                        WHERE comments IS NOT NULL AND channel_name = '{selected_channel}'
+                        ORDER BY comments DESC'''
+
         cursor.execute(query10)
         mydb.commit()
-        table10=cursor.fetchall()
-        df10=pd.DataFrame(table10,columns=["channel name","video title","No of comments"])
-        st.write(df10)   
+        table10 = cursor.fetchall()
+        df10 = pd.DataFrame(table10, columns=["channel name", "video title", "No of comments"])
+        st.write(df10)
+
 
 if selected == 'Project Learnings':
     st.header("Python Scripting")
     st.header("Data Collection")
     st.header("MongoDB")
+    st.header("SQL")
     st.header("API Integration")
     st.header("Data Management using MongoDB and SQL")
 
 if selected == 'Contact':
+    st.header("https://github.com/suman98kumar")
     st.header("My Email - sumankumarmba2020@gmail.com")
     st.header("My Number - 9943042892")
+    st.caption("Thankyou")
+    
